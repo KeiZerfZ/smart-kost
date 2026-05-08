@@ -31,7 +31,7 @@ class CheckRole
         $user = Auth::user();
 
         // 2. Cek apakah role user sesuai dengan yang diminta route
-        // Sesuai kriteria: Autentikasi multi-role (Pemilik Kost, Penghuni) [cite: 63]
+        // Sesuai kriteria: Autentikasi multi-role (Pemilik Kost, Penghuni)
         if ($user->role !== $role) {
             // Jika tidak sesuai, lempar error 403 (Akses Ditolak)
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');

@@ -9,7 +9,7 @@ class User extends Authenticatable
 {
     protected $fillable = ['name', 'email', 'password', 'role'];
 
-    // Relasi ke data penghuni jika role-nya adalah 'tenant' [cite: 63]
+    // Relasi ke data penghuni jika role-nya adalah 'tenant'
     public function tenant(): HasOne
     {
         return $this->hasOne(Tenant::class);

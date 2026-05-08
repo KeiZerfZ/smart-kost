@@ -40,7 +40,7 @@ class TenantController extends Controller
             'id_card_photo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048', // Validasi foto KTP 
         ]);
 
-        // 1. Buat User baru untuk akun login penghuni [cite: 63]
+        // 1. Buat User baru untuk akun login penghuni
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,

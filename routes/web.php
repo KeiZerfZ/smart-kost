@@ -23,25 +23,25 @@ Route::middleware(['auth'])->group(function () {
     // Menggunakan middleware 'CheckRole' yang lu buat sebelumnya
     Route::middleware(['role:owner'])->group(function () {
         
-        // Manajemen Kamar (CRUD) [cite: 64]
+        // Manajemen Kamar (CRUD)
         Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
         Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
         Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
 
-        // Manajemen Penghuni [cite: 64]
+        // Manajemen Penghuni
         Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
         Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
 
-        // Konfirmasi Pembayaran Manual [cite: 65]
+        // Konfirmasi Pembayaran Manual
         Route::patch('/invoices/{invoice}/paid', [InvoiceController::class, 'markAsPaid'])->name('invoices.paid');
     });
 
     // --- FITUR UMUM (Bisa diakses Pemilik & Penghuni) ---
     
-    // Daftar Tagihan (Owner liat semua, Tenant liat miliknya sendiri) [cite: 65, 66]
+    // Daftar Tagihan (Owner liat semua, Tenant liat miliknya sendiri)
     Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
 
-    // (Opsional) Modul Keluhan/Laporan Kerusakan [cite: 65]
+    // (Opsional) Modul Keluhan/Laporan Kerusakans
     // Route::resource('complaints', ComplaintController::class);
 });
 Auth::routes();
