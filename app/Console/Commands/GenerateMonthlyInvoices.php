@@ -6,6 +6,8 @@ use Illuminate\Console\Command;
 use App\Models\Tenant;
 use App\Models\Invoice;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvoiceGenerated;
 
 class GenerateMonthlyInvoices extends Command
 {
@@ -22,10 +24,10 @@ class GenerateMonthlyInvoices extends Command
         $count = 0;
 
         foreach ($tenants as $tenant) {
-            // Logika: Buat tagihan jika hari ini sama dengan tanggal masuk (misal masuk tgl 5, tagihan muncul tiap tgl 5) [cite: 231]
+            // Logika: Buat tagihan jika hari ini sama dengan tanggal masuk (misal masuk tgl 5, tagihan muncul tiap tgl 5)
             if ($today->day == $tenant->entry_date->day) {
                 
-                // Cek apakah tagihan untuk bulan ini sudah pernah dibuat sebelumnya [cite: 79]
+                // Cek apakah tagihan untuk bulan ini sudah pernah dibuat sebelumnya
                 $exists = Invoice::where('tenant_id', $tenant->id)
                     ->whereMonth('bill_date', $today->month)
                     ->whereYear('bill_date', $today->year)
@@ -36,9 +38,18 @@ class GenerateMonthlyInvoices extends Command
                         'tenant_id' => $tenant->id,
                         'amount' => $tenant->room->price, // Mengambil harga sewa dari kamar 
                         'bill_date' => $today,
-                        'status' => 'unpaid', // Status default adalah belum bayar [cite: 65]
+                        'status' => 'unpaid', // Status default adalah belum bayar
                     ]);
                     $count++;
+                
+                $newInvoice = Invoice::create([
+                        'tenant_id' => $tenant->id,
+                        'amount' => $tenant->room->price,
+                        'bill_date' => $today,
+                        'status' => 'unpaid',
+                    ]);
+
+                Mail::to($tenant->user->email)->send(new InvoiceGenerated($newInvoice));
                 }
             }
         }
