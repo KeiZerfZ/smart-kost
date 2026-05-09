@@ -38,18 +38,18 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request)
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => ['required', 'current_password'], // Laravel otomatis ngecek ke DB
             'password' => ['required', 'confirmed', Password::defaults()],
+        ], [
+            'current_password.current_password' => 'Password lama salah!',
+            'password.confirmed' => 'Konfirmasi password baru nggak cocok.'
         ]);
 
-        $user->update([
+        $request->user()->update([
             'password' => Hash::make($request->password),
         ]);
 
-        return back()->with('success', 'Password berhasil diubah.');
+        return back()->with('success', 'Password berhasil diperbarui!');
     }
 }

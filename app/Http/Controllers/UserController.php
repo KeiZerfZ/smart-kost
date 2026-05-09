@@ -8,45 +8,33 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    /**
-     * Menampilkan daftar semua user.
-     * Diakses oleh Owner untuk manajemen akun.
-     */
     public function index()
     {
-        // Mengambil semua user kecuali yang sedang login (biar gak hapus diri sendiri)
-        $users = User::where('id', '!=', auth()->id())->get();
+        // Tampilkan semua user, urutkan biar Owner ada di paling atas
+        $users = User::orderBy('role', 'asc')->get();
         return view('admin.users.index', compact('users'));
     }
 
-    /**
-     * Menyimpan user baru ke database.
-     */
-    public function store(Request $request)
+    // Fitur Reset Password oleh Admin (Jika user lupa total)
+    public function resetPassword(User $user)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required|in:owner,tenant',
+        $newPassword = 'kost' . rand(100, 999); // Generate password acak sederhana
+        
+        $user->update([
+            'password' => Hash::make($newPassword)
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-        ]);
-
-        return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan.');
+        return redirect()->back()->with('success', "Password {$user->name} berhasil di-reset menjadi: {$newPassword}. Silakan infokan ke user terkait.");
     }
 
-    /**
-     * Menghapus user.
-     */
     public function destroy(User $user)
     {
+        // Jangan sampai Admin hapus akunnya sendiri pas lagi login
+        if ($user->id == auth()->id()) {
+            return redirect()->back()->with('error', 'Nggak bisa hapus akun sendiri, bruh! Nanti lu gak bisa login lagi.');
+        }
+        
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User berhasil dihapus.');
+        return redirect()->back()->with('success', 'Akun user berhasil dihapus dari sistem.');
     }
 }
