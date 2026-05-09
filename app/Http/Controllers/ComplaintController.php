@@ -24,10 +24,14 @@ class ComplaintController extends Controller
             'description' => 'required',
         ]);
 
-        // Cari ID tenant milik user yang sedang login
-        $tenant = Tenant::where('user_id', auth()->id())->first();
+        // Ambil ID tenant dari user yang lagi login
+        $tenant = \App\Models\Tenant::where('user_id', auth()->id())->first();
 
-        Complaint::create([
+        if (!$tenant) {
+            return redirect()->back()->with('error', 'Data penghuni tidak ditemukan.');
+        }
+
+        \App\Models\Complaint::create([
             'tenant_id' => $tenant->id,
             'title' => $request->title,
             'description' => $request->description,
@@ -40,7 +44,15 @@ class ComplaintController extends Controller
     // Update status keluhan (Untuk Owner)
     public function updateStatus(Request $request, Complaint $complaint)
     {
-        $complaint->update(['status' => $request->status]);
-        return redirect()->back()->with('success', 'Status keluhan berhasil diperbarui.');
+        $request->validate([
+            'status' => 'required|in:pending,process,resolved',
+        ]);
+
+        $complaint->update([
+            'status' => $request->status
+        ]);
+
+        $msg = "Keluhan berhasil di-update jadi " . strtoupper($request->status);
+        return redirect()->back()->with('success', $msg);
     }
 }
