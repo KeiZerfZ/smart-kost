@@ -67,6 +67,7 @@ Route::get('/my-complaints', [ComplaintController::class, 'index'])
 Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('rooms', RoomController::class);
+    Route::resource('tenants', TenantController::class);
 });
 
 Route::middleware('auth')->group(function () {

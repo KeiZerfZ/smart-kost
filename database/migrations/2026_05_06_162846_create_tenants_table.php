@@ -13,10 +13,12 @@ return new class extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained(); 
-            $table->foreignId('room_id')->constrained(); // 
-            $table->string('id_card_photo')->nullable(); // Foto KTP 
-            $table->date('entry_date'); // Tanggal Masuk 
+            // onDelete('cascade') biar kalau User dihapus, data Tenant ini ikut hilang
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
+            $table->foreignId('room_id')->constrained(); 
+            $table->string('phone'); // <--- Tambahkan baris sakti ini
+            $table->string('id_card_photo')->nullable(); 
+            $table->date('entry_date'); 
             $table->timestamps();
         });        
     }
