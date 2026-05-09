@@ -35,7 +35,7 @@
                 </td>
                 <td class="p-3">
                     @if(Auth::user()->role == 'owner' && $invoice->status == 'unpaid')
-                        <form action="{{ route('invoices.paid', $invoice->id) }}" method="POST">
+                        <form action="{{ route('invoices.pay', $invoice->id) }}" method="POST">
                             @csrf @method('PATCH')
                             <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">
                                 Konfirmasi Bayar
