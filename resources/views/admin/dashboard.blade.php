@@ -28,7 +28,7 @@
 </div>
 
 <div class="bg-blue-50 p-8 rounded-2xl border-2 border-dashed border-blue-200 text-center">
-    <h2 class="text-xl font-bold text-blue-800">Selamat Bekerja, Admin! 🚀</h2>
-    <p class="text-blue-600">Gunakan menu di atas untuk mengelola data SmartKost lu.</p>
+    <h2 class="text-xl font-bold text-blue-800">Selamat Bekerja, Admin!</h2>
+    <p class="text-blue-600">Gunakan menu di atas untuk mengelola SmartKost.</p>
 </div>
 @endsection
