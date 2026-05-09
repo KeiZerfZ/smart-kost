@@ -1,10 +1,110 @@
-<td class="p-3">
-    @if($inv->status == 'paid')
-        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase 
-            {{ $inv->payment_method == 'qris' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700' }}">
-            {{ $inv->payment_method }}
-        </span>
-    @else
-        <span class="text-red-500 font-bold italic">Belum Bayar</span>
-    @endif
-</td>
+@extends('layouts.app')
+
+@section('content')
+<div class="max-w-6xl mx-auto px-2">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-3xl font-black text-gray-800 tracking-tighter italic">Laporan Keuangan.</h1>
+            <p class="text-gray-500 font-medium text-sm">Monitor seluruh tagihan dan arus kas SmartKost.</p>
+        </div>
+        <div class="flex gap-2">
+            <div class="bg-green-50 px-4 py-2 rounded-2xl border border-green-100 text-center">
+                <p class="text-[9px] font-black text-green-600 uppercase tracking-widest">Total Lunas</p>
+                <p class="font-black text-green-700">Rp {{ number_format($invoices->where('status', 'paid')->sum('amount'), 0, ',', '.') }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[900px]">
+                <thead>
+                    <tr class="bg-gray-50/50 border-b border-gray-50">
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Penghuni & Status</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kamar</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Periode Tagihan</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Nominal</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Metode / Status</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    @foreach($invoices as $inv)
+                    <tr class="hover:bg-gray-50/50 transition group">
+                        <td class="p-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-black text-[10px] text-gray-400">
+                                    {{ substr($inv->tenant->user->name ?? 'User', 0, 1) }}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm tracking-tight">{{ $inv->tenant->user->name ?? 'Mantan Penghuni' }}</h4>
+                                    <span class="text-[9px] font-black uppercase tracking-tighter {{ ($inv->tenant->room->status ?? '') == 'occupied' ? 'text-blue-500' : 'text-gray-400' }}">
+                                        ● {{ ($inv->tenant->room->status ?? '') == 'occupied' ? 'Aktif' : 'Sudah Checkout' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="p-6">
+                            <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-black text-xs italic">
+                                {{ $inv->tenant->room->room_number ?? 'N/A' }}
+                            </span>
+                        </td>
+
+                        <td class="p-6">
+                            <div class="font-bold text-gray-700 text-sm italic">{{ $inv->bill_date->format('F Y') }}</div>
+                            <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">Jatuh Tempo: 10 {{ $inv->bill_date->format('M') }}</p>
+                        </td>
+
+                        <td class="p-6">
+                            <div class="font-black text-gray-800 italic">Rp {{ number_format($inv->amount, 0, ',', '.') }}</div>
+                        </td>
+
+                        <td class="p-6">
+                            @if($inv->status == 'paid')
+                                <div class="flex flex-col space-y-1">
+                                    <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-600 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit border border-green-200">
+                                        Lunas
+                                    </span>
+                                    <span class="text-[9px] font-black text-gray-400 uppercase italic ml-1">
+                                        via {{ $inv->payment_method ?? 'Cash' }}
+                                    </span>
+                                </div>
+                            @else
+                                <span class="inline-flex items-center px-3 py-1 bg-red-50 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest w-fit border border-red-200 animate-pulse">
+                                    Belum Bayar
+                                </span>
+                            @endif
+                        </td>
+
+                        <td class="p-6">
+                            <div class="flex justify-center items-center space-x-2">
+                                @if($inv->status == 'unpaid')
+                                    <form action="{{ route('invoices.pay', $inv->id) }}" method="POST">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 hover:bg-blue-700 transition active:scale-95">
+                                            Konfirmasi Cash
+                                        </button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('invoices.download', $inv->id) }}" class="flex items-center space-x-1 bg-gray-800 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition shadow-lg active:scale-95">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        <span>PDF</span>
+                                    </a>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if($invoices->isEmpty())
+            <div class="py-20 text-center">
+                <p class="text-gray-400 font-black uppercase text-xs tracking-widest">Belum Ada Transaksi.</p>
+            </div>
+        @endif
+    </div>
+</div>
+@endsection 

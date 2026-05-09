@@ -12,13 +12,21 @@ class InvoiceController extends Controller
     public function index()
     {
         if (Auth::user()->role == 'owner') {
-            $invoices = Invoice::with('tenant.user', 'tenant.room')->get();
+            // Ganti titik (.) jadi panah (->)
+            $invoices = Invoice::with(['tenant.user', 'tenant.room'])
+                        ->latest()
+                        ->get();
+            
+            return view('admin.invoices.index', compact('invoices'));
         } else {
-            $invoices = Invoice::where('tenant_id', Auth::user()->tenant->id)->get();
+            $invoices = Invoice::where('tenant_id', Auth::user()->tenant->id)
+                        ->latest()
+                        ->get();
+                        
+            return view('tenant.dashboard', compact('invoices')); 
         }
-        return view('invoices.index', compact('invoices'));
     }
-
+    
     public function markAsPaid(Invoice $invoice)
     {
         $invoice->update(['status' => 'paid']);
