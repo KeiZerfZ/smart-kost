@@ -12,10 +12,10 @@ class Invoice extends Model
         'amount', 
         'bill_date', 
         'payment_date', 
+        'payment_method', // TAMBAHKAN INI
         'status'
     ];
 
-    // INI KUNCINYA: Kasih tahu Laravel kalau ini adalah tanggal
     protected $casts = [
         'bill_date' => 'date',
         'payment_date' => 'date',

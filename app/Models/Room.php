@@ -8,9 +8,13 @@ class Room extends Model
 {
     protected $fillable = ['room_number', 'type', 'price', 'status'];
 
-    // Relasi ke Tenant (Satu kamar punya satu penghuni aktif)
-    public function tenant()
+    public function tenants()
     {
-        return $this->hasOne(Tenant::class);
+        return $this->hasMany(Tenant::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasManyThrough(Invoice::class, Tenant::class);
     }
 }
