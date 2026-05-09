@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->string('room_number'); // 
-            $table->decimal('price', 12, 2); // 
-            $table->enum('status', ['empty', 'occupied', 'repair'])->default('empty'); // 
+            $table->string('room_number')->unique();
+            $table->string('type'); // <--- Pastikan baris ini ada
+            $table->integer('price');
+            $table->enum('status', ['empty', 'occupied'])->default('empty');
             $table->timestamps();
-        });    
+        });
     }
-
     /**
      * Reverse the migrations.
      */

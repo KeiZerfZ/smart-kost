@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Room extends Model
 {
-    protected $fillable = ['room_number', 'price', 'status'];
+    protected $fillable = ['room_number', 'type', 'price', 'status'];
 
-    // Relasi ke penghuni yang menempati kamar 
-    public function tenant(): HasOne
+    // Relasi ke Tenant (Satu kamar punya satu penghuni aktif)
+    public function tenant()
     {
         return $this->hasOne(Tenant::class);
     }
