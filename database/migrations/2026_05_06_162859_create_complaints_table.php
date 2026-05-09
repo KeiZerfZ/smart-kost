@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('complaints', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained(); // Relasi ke penghuni
-            $table->text('description'); // Detail kerusakan
-            $table->string('photo')->nullable(); // Foto bukti (opsional)
-            $table->enum('status', ['pending', 'process', 'resolved'])->default('pending'); // Status tracking 
+            $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+            $table->string('title');
+            $table->text('description');
+            $table->enum('status', ['pending', 'process', 'resolved'])->default('pending');
             $table->timestamps();
         });
     }
-
     /**
      * Reverse the migrations.
      */

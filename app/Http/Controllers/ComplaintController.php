@@ -4,39 +4,43 @@ namespace App\Http\Controllers;
 
 use App\Models\Complaint;
 use Illuminate\Http\Request;
+use App\Models\Tenant;
 use Illuminate\Support\Facades\Auth;
 
 class ComplaintController extends Controller
 {
-    // List keluhan (Pemilik liat semua, Penghuni liat miliknya sendiri)
+    // Lihat semua keluhan (Untuk Owner)
     public function index()
     {
-        if (Auth::user()->role == 'owner') {
-            $complaints = Complaint::with('tenant.user')->latest()->get();
-        } else {
-            $complaints = Complaint::where('tenant_id', Auth::user()->tenant->id)->latest()->get();
-        }
-        return view('complaints.index', compact('complaints'));
+        $complaints = Complaint::with('tenant.user', 'tenant.room')->latest()->get();
+        return view('admin.complaints.index', compact('complaints'));
     }
 
-    // Simpan laporan baru (Sisi Penghuni)
+    // Penghuni kirim keluhan
     public function store(Request $request)
     {
-        $request->validate(['description' => 'required']);
-        
-        Complaint::create([
-            'tenant_id' => Auth::user()->tenant->id,
-            'description' => $request->description,
-            'status' => 'pending'
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required',
         ]);
 
-        return redirect()->back()->with('success', 'Keluhan berhasil dikirim.');
+        // Cari ID tenant milik user yang sedang login
+        $tenant = Tenant::where('user_id', auth()->id())->first();
+
+        Complaint::create([
+            'tenant_id' => $tenant->id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'status' => 'pending',
+        ]);
+
+        return redirect()->back()->with('success', 'Keluhan lu sudah terkirim, sabar ya!');
     }
 
-    // Update status (Sisi Pemilik)
+    // Update status keluhan (Untuk Owner)
     public function updateStatus(Request $request, Complaint $complaint)
     {
         $complaint->update(['status' => $request->status]);
-        return redirect()->back()->with('success', 'Status keluhan diperbarui.');
+        return redirect()->back()->with('success', 'Status keluhan berhasil diperbarui.');
     }
 }

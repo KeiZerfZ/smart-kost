@@ -68,6 +68,9 @@ Route::middleware(['auth', 'role:owner'])->group(function () {
     Route::resource('users', UserController::class);
     Route::resource('rooms', RoomController::class);
     Route::resource('tenants', TenantController::class);
+    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    Route::patch('/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
+    Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
 });
 
 Route::middleware('auth')->group(function () {
