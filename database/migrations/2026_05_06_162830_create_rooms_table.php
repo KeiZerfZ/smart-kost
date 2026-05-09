@@ -13,10 +13,17 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
-            $table->string('room_number')->unique();
-            $table->string('type'); // <--- Pastikan baris ini ada
-            $table->integer('price');
+            $table->string('room_number'); 
+            $table->string('type'); 
+            
+            // Pakai bigInteger biar kuat nampung milyaran
+            $table->bigInteger('price'); 
+            
             $table->enum('status', ['empty', 'occupied'])->default('empty');
+            
+            // Pastikan urutannya begini biar 1 VIP & 1 Reguler dianggap beda
+            $table->unique(['room_number', 'type']);
+            
             $table->timestamps();
         });
     }

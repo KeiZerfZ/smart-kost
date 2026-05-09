@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Tenant;
+use App\Models\Invoice; // Wajib di-import
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,7 @@ class TenantController extends Controller
         ]);
 
         return DB::transaction(function() use ($request) {
-            // 1. Buat User
+            // 1. Buat User (Password default: penghuni123)
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -43,11 +44,11 @@ class TenantController extends Controller
                 'role' => 'tenant',
             ]);
 
-            // 2. Upload File
+            // 2. Upload File KTP
             $path = $request->file('id_card_photo')->store('ktp_photos', 'public');
 
-            // 3. Buat Tenant
-            Tenant::create([
+            // 3. Buat Data Tenant
+            $tenant = Tenant::create([
                 'user_id' => $user->id,
                 'room_id' => $request->room_id,
                 'phone' => $request->phone,
@@ -55,28 +56,32 @@ class TenantController extends Controller
                 'entry_date' => now(),
             ]);
 
-            // 4. Update Kamar
+            // 4. Update Status Kamar jadi Terisi
             Room::where('id', $request->room_id)->update(['status' => 'occupied']);
 
-            return redirect()->route('tenants.index')->with('success', 'Penghuni berhasil didaftarkan.');
+            // 5. OTOMATISASI: Buat Tagihan Pertama (Bulan Pertama)
+            Invoice::create([
+                'tenant_id' => $tenant->id,
+                'amount' => $tenant->room->price, // Ambil harga kamar otomatis
+                'bill_date' => now(),
+                'status' => 'unpaid',
+            ]);
+
+            return redirect()->route('tenants.index')->with('success', 'Penghuni didaftarkan & tagihan pertama telah dibuat. Password default: penghuni123');
         });
     }
 
     public function destroy(Tenant $tenant)
     {
         return DB::transaction(function() use ($tenant) {
-            // Fix Error: Cek dulu fotonya ada atau nggak sebelum dihapus
             if ($tenant->id_card_photo && Storage::disk('public')->exists($tenant->id_card_photo)) {
                 Storage::disk('public')->delete($tenant->id_card_photo);
             }
 
-            // Kembalikan status kamar
             $tenant->room->update(['status' => 'empty']);
-
-            // Hapus User (Otomatis hapus Tenant karena relasi/cascade)
             $tenant->user->delete();
 
-            return redirect()->route('tenants.index')->with('success', 'Penghuni telah checkout dan akun dihapus.');
+            return redirect()->route('tenants.index')->with('success', 'Penghuni telah checkout.');
         });
     }
 }

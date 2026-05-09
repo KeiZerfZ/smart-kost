@@ -9,7 +9,14 @@
         
         <div class="mb-4">
             <label class="block text-sm font-bold mb-1">Nomor Kamar</label>
-            <input type="text" name="room_number" value="{{ $room->room_number }}" class="w-full p-2 border rounded" required>
+            <input type="text" name="room_number" 
+                class="w-full p-3 border rounded-xl outline-none transition
+                {{ $errors->has('room_number') ? 'border-red-500 ring-2 ring-red-100 bg-red-50' : 'border-gray-200 focus:ring-2 focus:ring-blue-500' }}" 
+                value="{{ old('room_number') }}" required>
+            
+            @error('room_number')
+                <p class="text-[10px] text-red-500 font-bold mt-1 uppercase italic">{{ $message }}</p>
+            @enderror
         </div>
 
         <div class="mb-4">

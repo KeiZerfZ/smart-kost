@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoomController extends Controller
 {
@@ -16,19 +17,22 @@ class RoomController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'room_number' => 'required|unique:rooms,room_number',
-            'type' => 'required|string',
-            'price' => 'required|numeric',
+            'room_number' => [
+                'required',
+                // Mencari apakah kombinasi room_number DAN type sudah ada
+                Rule::unique('rooms')->where(function ($query) use ($request) {
+                    return $query->where('type', $request->type);
+                }),
+            ],
+            'type' => 'required',
+            'price' => 'required|numeric|min:0',
+        ], [
+            'room_number.unique' => 'Nomor kamar ' . $request->room_number . ' dengan tipe ' . $request->type . ' sudah ada.'
         ]);
 
-        Room::create([
-            'room_number' => $request->room_number,
-            'type' => $request->type,
-            'price' => $request->price,
-            'status' => 'empty', // Default kamar baru pasti kosong
-        ]);
+        Room::create($request->all());
 
-        return redirect()->back()->with('success', 'Kamar berhasil ditambahkan.');
+        return redirect()->route('rooms.index')->with('success', 'Kamar berhasil ditambah!');
     }
 
     public function edit(Room $room)
