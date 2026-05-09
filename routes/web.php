@@ -1,80 +1,105 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\TenantDashboardController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Auth;
 
-// 1. Route Home - Langsung ke Dashboard/Login
+/*
+|--------------------------------------------------------------------------
+| Web Routes - SmartKost Management System (Final Build 2026.05.09)
+|--------------------------------------------------------------------------
+*/
+
+// --- 1. LANDING & AUTH ---
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 2. Route Autentikasi (Bisa pakai Laravel Breeze/Fortify atau Manual)
-// Jika lu pakai Laravel Starter Kit, baris di bawah biasanya sudah otomatis
-Auth::routes(); 
+// Fitur Register dimatikan: Pendaftaran hanya via Admin di menu Penghuni
+Auth::routes(['register' => false]);
 
-// 3. Grup Route yang Wajib Login
-Route::middleware(['auth'])->group(function () {
+// --- 2. AUTHENTICATED AREA (Wajib Login) ---
+Route::middleware('auth')->group(function () {
 
-    // --- FITUR KHUSUS PEMILIK (OWNER) ---
-    // Menggunakan middleware 'CheckRole' yang lu buat sebelumnya
-    Route::middleware(['role:owner'])->group(function () {
-        
-        // Manajemen Kamar (CRUD)
-        Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
-        Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
-        Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
+    /**
+     * LOGIKA REDIRECT HOME
+     * Menentukan dashboard mana yang tampil setelah login sukses
+     */
+    Route::get('/home', function () {
+        if (auth()->user()->role == 'owner') {
+            return redirect()->route('admin.dashboard');
+        }
+        return redirect()->route('tenant.dashboard');
+    })->name('home');
 
-        // Manajemen Penghuni
-        Route::get('/tenants', [TenantController::class, 'index'])->name('tenants.index');
-        Route::post('/tenants', [TenantController::class, 'store'])->name('tenants.store');
-
-        // Konfirmasi Pembayaran Manual
-        Route::patch('/invoices/{invoice}/paid', [InvoiceController::class, 'markAsPaid'])->name('invoices.paid');
+    /**
+     * PENGATURAN PROFIL (Owner & Tenant)
+     */
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'index')->name('profile.index');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::put('/profile/password', 'updatePassword')->name('profile.password');
     });
 
-    // --- FITUR UMUM (Bisa diakses Pemilik & Penghuni) ---
-    
-    // Daftar Tagihan (Owner liat semua, Tenant liat miliknya sendiri)
-    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+    /**
+     * FITUR DOWNLOAD PDF
+     * Bukti bayar sah bisa diunduh oleh kedua belah pihak
+     */
+    Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
 
-    // (Opsional) Modul Keluhan/Laporan Kerusakans
-    // Route::resource('complaints', ComplaintController::class);
-});
-Auth::routes();
+    // ==========================================
+    // --- GRUP KHUSUS OWNER (PEMILIK/ADMIN) ---
+    // ==========================================
+    Route::middleware('role:owner')->prefix('admin')->group(function () {
+        
+        // Dashboard & Statistik
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+        // CRUD Master Data
+        Route::resource('rooms', RoomController::class);
+        Route::resource('tenants', TenantController::class);
 
-Auth::routes();
+        // MANAJEMEN AKUN USER (Reset & Hapus Akun)
+        Route::controller(UserController::class)->group(function () {
+            Route::get('/users', 'index')->name('users.index');
+            Route::delete('/users/{user}', 'destroy')->name('users.destroy');
+            Route::patch('/users/{user}/reset', 'resetPassword')->name('users.reset');
+        });
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+        // MANAJEMEN KEUANGAN & TAGIHAN
+        Route::controller(InvoiceController::class)->group(function () {
+            Route::get('/invoices', 'index')->name('invoices.index');
+            Route::post('/invoices/manual', 'store')->name('invoices.store');
+            Route::patch('/invoices/{invoice}/pay', 'pay')->name('invoices.pay'); // Konfirmasi Cash
+        });
 
-// Contoh memproteksi manajemen kamar yang hanya boleh diakses Pemilik Kost (owner)
-Route::get('/rooms', [RoomController::class, 'index'])
-    ->middleware('role:owner')
-    ->name('rooms.index');
+        // MANAJEMEN KELUHAN FASILITAS
+        Route::controller(ComplaintController::class)->group(function () {
+            Route::get('/complaints', 'index')->name('complaints.index');
+            Route::patch('/complaints/{complaint}/status', 'updateStatus')->name('complaints.updateStatus');
+        });
+    });
 
-// Contoh memproteksi halaman keluhan yang bisa diakses oleh Penghuni (tenant)
-Route::get('/my-complaints', [ComplaintController::class, 'index'])
-    ->middleware('role:tenant')
-    ->name('complaints.index');
+    // ==========================================
+    // --- GRUP KHUSUS TENANT (PENGHUNI) ---
+    // ==========================================
+    Route::middleware('role:tenant')->prefix('tenant')->group(function () {
+        
+        // Dashboard Penghuni
+        Route::get('/dashboard', [TenantDashboardController::class, 'index'])->name('tenant.dashboard');
 
-Route::middleware(['auth', 'role:owner'])->group(function () {
-    Route::resource('users', UserController::class);
-    Route::resource('rooms', RoomController::class);
-    Route::resource('tenants', TenantController::class);
-    Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
-    Route::patch('/invoices/{invoice}/pay', [InvoiceController::class, 'pay'])->name('invoices.pay');
-    Route::post('/invoices', [InvoiceController::class, 'store'])->name('invoices.store');
-});
+        // Pembayaran Mandiri via QRIS
+        Route::patch('/invoices/{invoice}/qris', [InvoiceController::class, 'payQRIS'])->name('invoices.payQRIS');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+        // Lapor Keluhan Baru
+        Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
+    });
+
 });
