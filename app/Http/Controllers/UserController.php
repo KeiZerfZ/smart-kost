@@ -29,9 +29,8 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        // Jangan sampai Admin hapus akunnya sendiri pas lagi login
         if ($user->id == auth()->id()) {
-            return redirect()->back()->with('error', 'Nggak bisa hapus akun sendiri, bruh! Nanti lu gak bisa login lagi.');
+            return redirect()->back()->with('error', 'Nggak bisa hapus akun sendiri, Nanti kamu gak bisa login lagi.');
         }
         
         $user->delete();

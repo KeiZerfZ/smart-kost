@@ -38,7 +38,7 @@ class ComplaintController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->back()->with('success', 'Keluhan lu sudah terkirim, sabar ya!');
+        return redirect()->back()->with('success', 'Keluhan sudah terkirim, sabar ya!');
     }
 
     // Update status keluhan (Untuk Owner)

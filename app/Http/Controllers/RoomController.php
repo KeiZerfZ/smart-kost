@@ -56,12 +56,23 @@ class RoomController extends Controller
 
     public function destroy(Room $room)
     {
-        // Validasi: Jangan hapus kalau masih ada penghuninya
-        if ($room->status === 'occupied') {
-            return redirect()->back()->with('error', 'Kamar tidak bisa dihapus karena masih ada penghuni.');
+        // 1. Pengecekan manual (Pastikan lowercase)
+        if (strtolower($room->status) === 'occupied') {
+            return redirect()->route('rooms.index')->with('error', 'Kamar ' . $room->room_number . ' tidak bisa dihapus karena masih ada penghuninya!');
         }
 
-        $room->delete();
-        return redirect()->back()->with('success', 'Kamar berhasil dihapus.');
+        try {
+            // 2. Cek relasi secara database untuk memastikan keamanan data
+            if ($room->tenants()->exists()) {
+                return redirect()->route('rooms.index')->with('error', 'Gagal hapus! Masih ada data penghuni yang terikat ke kamar ini.');
+            }
+
+            $room->delete();
+            return redirect()->route('rooms.index')->with('success', 'Kamar ' . $room->room_number . ' berhasil dihapus.');
+            
+        } catch (\Exception $e) {
+            // 3. Nangkap error database (Foreign Key error dsb)
+            return redirect()->route('rooms.index')->with('error', 'Sistem menolak penghapusan karena kamar ini memiliki riwayat transaksi.');
+        }
     }
 }

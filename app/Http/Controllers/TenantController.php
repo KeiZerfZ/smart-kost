@@ -21,7 +21,10 @@ class TenantController extends Controller
 
     public function create()
     {
-        $rooms = Room::where('status', 'empty')->get();
+        // Gunakan 'where' dengan huruf kecil, tapi pastikan di database juga kecil.
+        // Atau bisa gunakan whereIn kalau mau lebih fleksibel.
+        $rooms = Room::where('status', 'empty')->orderBy('room_number', 'asc')->get();
+
         return view('admin.tenants.create', compact('rooms'));
     }
 
@@ -74,14 +77,14 @@ class TenantController extends Controller
     public function destroy(Tenant $tenant)
     {
         return DB::transaction(function() use ($tenant) {
-            if ($tenant->id_card_photo && Storage::disk('public')->exists($tenant->id_card_photo)) {
-                Storage::disk('public')->delete($tenant->id_card_photo);
-            }
-
+            // Kamar dikosongkan biar bisa disewa orang lain
             $tenant->room->update(['status' => 'empty']);
-            $tenant->user->delete();
 
-            return redirect()->route('tenants.index')->with('success', 'Penghuni telah checkout.');
+            // Akun user-nya tetap ada atau di-suspend, jangan di-delete
+            // Tapi set status di tenant (kalau lu punya kolom status di table tenants)
+            // Atau biarkan saja, yang penting Record Tenant-nya TIDAK DI-DELETE
+            
+            return redirect()->route('tenants.index')->with('success', 'Penghuni berhasil checkout, riwayat tetap tersimpan.');
         });
     }
 }
