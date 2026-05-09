@@ -5,6 +5,8 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Auth;
 
 // 1. Route Home - Langsung ke Dashboard/Login
@@ -61,3 +63,14 @@ Route::get('/rooms', [RoomController::class, 'index'])
 Route::get('/my-complaints', [ComplaintController::class, 'index'])
     ->middleware('role:tenant')
     ->name('complaints.index');
+
+Route::middleware(['auth', 'role:owner'])->group(function () {
+    Route::resource('users', UserController::class);
+    Route::resource('rooms', RoomController::class);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+});
