@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tenant_id')->constrained();
-            $table->decimal('amount', 12, 2); // 
-            $table->date('bill_date'); // Tanggal tagihan muncul 
-            $table->enum('status', ['unpaid', 'paid', 'pending'])->default('unpaid'); // 
+            $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
+            $table->integer('amount');
+            $table->date('bill_date');
+            $table->date('payment_date')->nullable();
+            $table->enum('status', ['unpaid', 'paid'])->default('unpaid');
+            $table->string('payment_method')->nullable();
             $table->timestamps();
-        });    
+        });
     }
-
     /**
      * Reverse the migrations.
      */
