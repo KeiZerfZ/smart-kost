@@ -20,7 +20,7 @@
                         <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Penghuni</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kamar</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Kontak</th>
-                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Identitas</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Identitas</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Manajemen</th>
                     </tr>
                 </thead>
@@ -34,7 +34,10 @@
                                 </div>
                                 <div>
                                     <h4 class="font-bold text-gray-800 tracking-tight">{{ $t->user->name }}</h4>
-                                    <p class="text-[10px] text-gray-400 font-medium">{{ $t->user->email }}</p>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                        <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest text-green-600">Aktif</p>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -57,19 +60,23 @@
                             </a>
                         </td>
 
-                        <td class="p-6">
-                            <a href="{{ asset('storage/'.$t->id_card_photo) }}" target="_blank" class="inline-flex items-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition">
+                        <td class="p-6 text-center">
+                            @php
+                                // Mengambil hanya nama file untuk parameter route
+                                $ktpFilename = str_replace('ktp_photos/', '', $t->id_card_photo);
+                            @endphp
+                            <a href="{{ route('tenants.ktp.show', $ktpFilename) }}" target="_blank" class="inline-flex items-center space-x-2 bg-gray-50 hover:bg-blue-50 text-blue-400 hover:text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition border border-transparent hover:border-blue-100">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                                <span>Preview KTP</span>
+                                <span>Lihat KTP</span>
                             </a>
                         </td>
 
                         <td class="p-6">
                             <div class="flex justify-center">
-                                <form action="{{ route('tenants.destroy', $t->id) }}" method="POST" onsubmit="return confirm('Apakah penghuni ini beneran mau Checkout? Kamar akan otomatis dikosongkan.')">
+                                <form action="{{ route('tenants.destroy', $t->id) }}" method="POST" onsubmit="return confirm('Proses checkout penghuni?')">
                                     @csrf 
                                     @method('DELETE')
-                                    <button type="submit" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition duration-300 shadow-sm">
+                                    <button type="submit" class="bg-red-50 text-red-500 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition duration-300 shadow-sm border border-red-100">
                                         Checkout
                                     </button>
                                 </form>

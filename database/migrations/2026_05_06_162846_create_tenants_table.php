@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->id();
-            // onDelete('cascade') biar kalau User dihapus, data Tenant ini ikut hilang
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->foreignId('room_id')->constrained(); 
-            $table->string('phone'); // <--- Tambahkan baris sakti ini
+            $table->string('phone');
             $table->string('id_card_photo')->nullable(); 
             $table->date('entry_date'); 
+            $table->boolean('is_active')->default(true); 
             $table->timestamps();
         });        
     }

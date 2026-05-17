@@ -5,26 +5,28 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Room;
 use App\Models\Tenant;
-use App\Models\Invoice; // Wajib di-import
+use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 class TenantController extends Controller
 {
     public function index()
     {
-        $tenants = Tenant::with(['user', 'room'])->get();
+        // Hanya ambil penghuni yang berstatus AKTIF
+        $tenants = Tenant::with(['user', 'room'])
+                    ->where('is_active', true)
+                    ->get();
+                    
         return view('admin.tenants.index', compact('tenants'));
     }
 
     public function create()
     {
-        // Gunakan 'where' dengan huruf kecil, tapi pastikan di database juga kecil.
-        // Atau bisa gunakan whereIn kalau mau lebih fleksibel.
         $rooms = Room::where('status', 'empty')->orderBy('room_number', 'asc')->get();
-
         return view('admin.tenants.create', compact('rooms'));
     }
 
@@ -39,7 +41,7 @@ class TenantController extends Controller
         ]);
 
         return DB::transaction(function() use ($request) {
-            // 1. Buat User (Password default: penghuni123)
+            // 1. Buat User
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -47,44 +49,64 @@ class TenantController extends Controller
                 'role' => 'tenant',
             ]);
 
-            // 2. Upload File KTP
-            $path = $request->file('id_card_photo')->store('ktp_photos', 'public');
+            // 2. Simpan Foto KTP
+            $path = $request->file('id_card_photo')->store('ktp_photos', 'local');
 
-            // 3. Buat Data Tenant
+            // 3. Buat Data Tenant (Pastikan is_active true)
             $tenant = Tenant::create([
                 'user_id' => $user->id,
                 'room_id' => $request->room_id,
                 'phone' => $request->phone,
                 'id_card_photo' => $path,
                 'entry_date' => now(),
+                'is_active' => true, // Set aktif saat daftar
             ]);
 
-            // 4. Update Status Kamar jadi Terisi
+            // 4. Update Kamar
             Room::where('id', $request->room_id)->update(['status' => 'occupied']);
 
-            // 5. OTOMATISASI: Buat Tagihan Pertama (Bulan Pertama)
+            // 5. Buat Tagihan
             Invoice::create([
                 'tenant_id' => $tenant->id,
-                'amount' => $tenant->room->price, // Ambil harga kamar otomatis
+                'amount' => $tenant->room->price,
                 'bill_date' => now(),
                 'status' => 'unpaid',
             ]);
 
-            return redirect()->route('tenants.index')->with('success', 'Penghuni didaftarkan & tagihan pertama telah dibuat. Password default: penghuni123');
+            return redirect()->route('tenants.index')->with('success', 'Penghuni berhasil didaftarkan.');
         });
+    }
+
+    /**
+     * Fungsi Gatekeeper untuk menampilkan foto KTP secara aman.
+     * Hanya diakses oleh Admin/Owner melalui Route khusus.
+     */
+    public function showKtp($filename)
+    {
+        // Pastikan path sesuai dengan penyimpanan di folder storage/app/ktp_photos/
+        $path = 'ktp_photos/' . $filename;
+
+        if (!Storage::disk('local')->exists($path)) {
+            abort(404, 'Berkas identitas tidak ditemukan.');
+        }
+
+        // Mengembalikan file sebagai response gambar
+        return Storage::disk('local')->response($path);
     }
 
     public function destroy(Tenant $tenant)
     {
         return DB::transaction(function() use ($tenant) {
-            // Kamar dikosongkan biar bisa disewa orang lain
+            // 1. Kosongkan Kamar
             $tenant->room->update(['status' => 'empty']);
 
-            // Akun user-nya tetap ada atau di-suspend, jangan di-delete
-            // Tapi set status di tenant (kalau lu punya kolom status di table tenants)
-            // Atau biarkan saja, yang penting Record Tenant-nya TIDAK DI-DELETE
+            // 2. Non-aktifkan Tenant (Bukan di-delete!)
+            $tenant->update(['is_active' => false]);
             
-            return redirect()->route('tenants.index')->with('success', 'Penghuni berhasil checkout, riwayat tetap tersimpan.');
+            // 3. Opsional: Suspend akun user agar tidak bisa login lagi
+            // $tenant->user->update(['is_active' => false]);
+
+            return redirect()->route('tenants.index')->with('success', 'Penghuni telah checkout. Data arsip tersimpan.');
         });
     }
 }

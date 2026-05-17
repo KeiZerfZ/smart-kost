@@ -13,7 +13,7 @@ use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - SmartKost Management System (Final Build 2026.05.09)
+| Web Routes - SmartKost Management System (Final Build 2026.05.17)
 |--------------------------------------------------------------------------
 */
 
@@ -22,7 +22,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Fitur Register dimatikan: Pendaftaran hanya via Admin di menu Penghuni
+// Fitur Register dimatikan: Pendaftaran hanya via Admin
 Auth::routes(['register' => false]);
 
 // --- 2. AUTHENTICATED AREA (Wajib Login) ---
@@ -30,7 +30,6 @@ Route::middleware('auth')->group(function () {
 
     /**
      * LOGIKA REDIRECT HOME
-     * Menentukan dashboard mana yang tampil setelah login sukses
      */
     Route::get('/home', function () {
         if (auth()->user()->role == 'owner') {
@@ -49,8 +48,7 @@ Route::middleware('auth')->group(function () {
     });
 
     /**
-     * FITUR DOWNLOAD PDF
-     * Bukti bayar sah bisa diunduh oleh kedua belah pihak
+     * FITUR DOWNLOAD PDF (Akses Umum Terautentikasi)
      */
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
 
@@ -62,11 +60,21 @@ Route::middleware('auth')->group(function () {
         // Dashboard & Statistik
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-        // CRUD Master Data
+        // CRUD MASTER DATA & SECURITY
+        Route::controller(TenantController::class)->group(function () {
+            /**
+             * URL HARDENING: Pintu khusus akses berkas KTP.
+             * Mengambil file dari private storage (disk: local).
+             */
+            Route::get('/tenants/ktp/{filename}', 'showKtp')
+                ->name('tenants.ktp.show')
+                ->where('filename', '.*');
+        });
+        
         Route::resource('rooms', RoomController::class);
         Route::resource('tenants', TenantController::class);
 
-        // MANAJEMEN AKUN USER (Reset & Hapus Akun)
+        // MANAJEMEN AKUN USER
         Route::controller(UserController::class)->group(function () {
             Route::get('/users', 'index')->name('users.index');
             Route::delete('/users/{user}', 'destroy')->name('users.destroy');
@@ -77,10 +85,10 @@ Route::middleware('auth')->group(function () {
         Route::controller(InvoiceController::class)->group(function () {
             Route::get('/invoices', 'index')->name('invoices.index');
             Route::post('/invoices/manual', 'store')->name('invoices.store');
-            Route::patch('/invoices/{invoice}/pay', 'pay')->name('invoices.pay'); // Konfirmasi Cash
+            Route::patch('/invoices/{invoice}/pay', 'pay')->name('invoices.pay'); 
         });
 
-        // MANAJEMEN KELUHAN FASILITAS
+        // MANAJEMEN KELUHAN
         Route::controller(ComplaintController::class)->group(function () {
             Route::get('/complaints', 'index')->name('complaints.index');
             Route::patch('/complaints/{complaint}/status', 'updateStatus')->name('complaints.updateStatus');
@@ -92,13 +100,12 @@ Route::middleware('auth')->group(function () {
     // ==========================================
     Route::middleware('role:tenant')->prefix('tenant')->group(function () {
         
-        // Dashboard Penghuni
         Route::get('/dashboard', [TenantDashboardController::class, 'index'])->name('tenant.dashboard');
-
-        // Pembayaran Mandiri via QRIS
+        
+        // Pembayaran Mandiri
         Route::patch('/invoices/{invoice}/qris', [InvoiceController::class, 'payQRIS'])->name('invoices.payQRIS');
 
-        // Lapor Keluhan Baru
+        // Lapor Keluhan
         Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
     });
 
