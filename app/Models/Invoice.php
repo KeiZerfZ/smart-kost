@@ -25,4 +25,9 @@ class Invoice extends Model
     {
         return $this->belongsTo(Tenant::class);
     }
+
+        public function waLogs()
+    {
+        return $this->hasMany(WaLog::class);
+    }
 }
