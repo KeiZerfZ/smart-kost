@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->foreignId('room_id')->constrained(); 
             $table->string('phone');
+            $table->string('telegram_chat_id')->nullable();
             $table->string('id_card_photo')->nullable(); 
             $table->date('entry_date'); 
             $table->boolean('is_active')->default(true); 

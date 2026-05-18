@@ -12,10 +12,11 @@ class Tenant extends Model
     protected $fillable = [
         'user_id', 
         'room_id', 
-        'phone', 
+        'phone',
+        'telegram_chat_id', 
         'id_card_photo', 
         'entry_date', 
-        'is_active' // Tambahkan ini
+        'is_active'
     ];
 
     protected $casts = [
