@@ -3,9 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -22,36 +20,20 @@ class InvoiceGenerated extends Mailable
         $this->invoice = $invoice;
     }
 
-    public function build()
-    {
-        return $this->subject('Tagihan Kost Baru - SmartKost')
-                    ->view('emails.invoice_notif');
-    }
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Invoice Generated',
+            subject: 'Bukti Pembayaran SmartKost - #' . $this->invoice->id,
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'emails.invoice_notif', // Pastikan mengarah ke file yang benar
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, Attachment>
-     */
     public function attachments(): array
     {
         return [];
