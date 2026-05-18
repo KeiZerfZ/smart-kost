@@ -1,6 +1,6 @@
 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd;">
     <h2>Halo, {{ $invoice->tenant->user->name }}!</h2>
-    <p>Tagihan kost lu untuk bulan ini sudah terbit.</p>
+    <p>Tagihan kost kamu untuk bulan ini sudah terbit.</p>
     <table style="width: 100%; border-collapse: collapse;">
         <tr>
             <td><strong>Nomor Kamar</strong></td>
