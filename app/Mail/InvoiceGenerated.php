@@ -3,13 +3,14 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use App\Models\Invoice;
 
-class InvoiceGenerated extends Mailable
+class InvoiceGenerated extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
@@ -30,7 +31,7 @@ class InvoiceGenerated extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.invoice_notif', // Pastikan mengarah ke file yang benar
+            view: 'emails.invoice_notif',
         );
     }
 
