@@ -109,4 +109,13 @@ Route::middleware('auth')->group(function () {
         Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
     });
 
+
+    Route::get('/test-wa', function() {
+        $target = '08xxxxxxxxxx'; // Masukkan nomor WA lu paka 08...
+        $message = "Halo Brok! Ini tes notifikasi dari sistem *SmartKost.* Kalau masuk, berarti lu keren! 😎";
+        
+        $result = \App\Services\FonnteService::send($target, $message);
+        return response()->json($result);
+    });
+
 });
