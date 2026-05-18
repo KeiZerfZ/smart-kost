@@ -61,20 +61,27 @@ class InvoiceController extends Controller
         $tenant = $invoice->tenant;
         $chatId = $tenant->telegram_chat_id;
 
-        // Jika kolom di DB kosong, jangan kirim apa-apa
         if (!$chatId) return;
 
         $amount = number_format($invoice->amount, 0, ',', '.');
         
+        // Generate URL Download (Pastikan APP_URL di .env sudah benar)
+        $downloadUrl = route('invoices.download', $invoice->id);
+
         $message = "✅ *PEMBAYARAN DITERIMA*\n\n";
         $message .= "Halo *{$tenant->user->name}*,\n";
         $message .= "Tagihan periode *{$invoice->created_at->format('F Y')}* telah lunas.\n\n";
         $message .= "💰 Nominal: *Rp {$amount}*\n";
         $message .= "💳 Metode: " . strtoupper($invoice->payment_method) . "\n";
         $message .= "📅 Waktu: " . $invoice->payment_date->format('d/m/Y H:i') . " WIB\n\n";
+        
+        // TAMBAHKAN LINK PDF DI SINI
+        $message .= "📄 *Bukti Pembayaran (PDF):*\n";
+        $message .= "[Klik di Sini Untuk Download]({$downloadUrl})\n\n";
+        
         $message .= "Terima kasih! 🙏";
 
-        TelegramService::sendMessage($chatId, $message);
+        \App\Services\TelegramService::sendMessage($chatId, $message);
     }
 
     public function download(Invoice $invoice)
