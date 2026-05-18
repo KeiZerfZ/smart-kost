@@ -6,104 +6,104 @@ use App\Models\Invoice;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail; // Wajib untuk kirim email
-use App\Mail\InvoiceGenerated;      // Wajib panggil class Mailable lu
+use App\Services\FonnteService; // Fokus ke WA
 use Exception;
 
 class InvoiceController extends Controller
 {
     /**
-     * Tampilkan daftar tagihan berdasarkan role.
+     * Tampilkan daftar tagihan
      */
     public function index()
     {
         if (Auth::user()->role == 'owner') {
-            // Admin: Liat semua tagihan
-            $invoices = Invoice::with(['tenant.user', 'tenant.room'])
-                        ->latest()
-                        ->get();
-            
+            $invoices = Invoice::with(['tenant.user', 'tenant.room'])->latest()->get();
             return view('admin.invoices.index', compact('invoices'));
         } else {
-            // Tenant: Liat tagihan milik sendiri
-            $invoices = Invoice::where('tenant_id', Auth::user()->tenant->id)
-                        ->latest()
-                        ->get();
-                        
+            $invoices = Invoice::where('tenant_id', Auth::user()->tenant->id)->latest()->get();
             return view('tenant.dashboard', compact('invoices')); 
         }
     }
 
     /**
-     * Fungsi untuk Admin (Konfirmasi Pembayaran Cash)
+     * Konfirmasi Pembayaran Cash (Admin)
      */
     public function pay(Invoice $invoice)
     {
         try {
-            // 1. Update status pembayaran di database
+            // 1. Update Database
             $invoice->update([
                 'status' => 'paid',
                 'payment_method' => 'cash',
                 'payment_date' => now(),
             ]);
 
-            // 2. Kirim Email Bukti Pembayaran
-            Mail::to($invoice->tenant->user->email)->send(new InvoiceGenerated($invoice));
+            // 2. Kirim Notifikasi WA saja
+            $this->sendWhatsAppNotification($invoice);
 
-            return redirect()->back()->with('success', 'Pembayaran cash berhasil dikonfirmasi dan bukti email telah dikirim!');
+            return redirect()->back()->with('success', 'Pembayaran cash dikonfirmasi. Notifikasi WA terkirim!');
 
         } catch (Exception $e) {
-            // Jika database ok tapi email gagal, tetap lunas tapi kasih warning error
-            return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi, namun email bukti gagal terkirim: ' . $e->getMessage());
+            return redirect()->back()->with('success', 'Pembayaran OK, tapi WA gagal: ' . $e->getMessage());
         }
     }
 
     /**
-     * Fungsi untuk Tenant (Bayar via QRIS)
+     * Bayar via QRIS (Tenant)
      */
     public function payQRIS(Invoice $invoice)
     {
         try {
-            // Update status pembayaran
             $invoice->update([
                 'status' => 'paid',
                 'payment_method' => 'qris',
                 'payment_date' => now(),
             ]);
 
-            // Kirim Email Bukti Pembayaran
-            Mail::to($invoice->tenant->user->email)->send(new InvoiceGenerated($invoice));
+            $this->sendWhatsAppNotification($invoice);
 
-            return redirect()->back()->with('success', 'Pembayaran QRIS Berhasil! Bukti invoice telah mendarat di email lu.');
+            return redirect()->back()->with('success', 'Pembayaran QRIS Berhasil! Notifikasi WA telah mendarat.');
 
         } catch (Exception $e) {
-            return redirect()->back()->with('success', 'Pembayaran QRIS Berhasil! (Email notifikasi gagal terkirim)');
+            return redirect()->back()->with('success', 'Pembayaran Berhasil! (Notifikasi WA gagal)');
         }
     }
 
     /**
-     * Download Bukti Pembayaran PDF
+     * Helper Function: Kirim WhatsApp saja
      */
+    private function sendWhatsAppNotification($invoice)
+    {
+        $user = $invoice->tenant->user; 
+        $phone = $invoice->tenant->phone; // Nomor dari tabel tenants
+
+        $amount_formatted = number_format($invoice->amount, 0, ',', '.'); 
+        
+        $message = "Halo *{$user->name}*,\n\n";
+        $message .= "Pembayaran tagihan SmartKost Anda periode *{$invoice->created_at->format('M Y')}* sebesar *Rp {$amount_formatted}* telah berhasil dikonfirmasi.\n\n";
+        $message .= "Status: *LUNAS*\n";
+        $message .= "Metode: " . strtoupper($invoice->payment_method) . "\n";
+        $message .= "Tanggal: " . $invoice->payment_date->format('d M Y H:i') . " WIB\n\n";
+        $message .= "Terima kasih telah melakukan pembayaran tepat waktu! 🙏";
+
+        // Langsung kirim via Fonnte (HTTPS API)
+        if ($phone) {
+            FonnteService::send($phone, $message);
+        }
+    }
+
     public function download(Invoice $invoice)
     {
-        // Pastikan hanya tagihan yang sudah LUNAS yang bisa cetak bukti
         if ($invoice->status !== 'paid') {
-            return redirect()->back()->with('error', 'Tagihan belum lunas, nggak bisa cetak bukti!');
+            return redirect()->back()->with('error', 'Tagihan belum lunas!');
         }
-
-        // Load view khusus PDF dan kirim datanya
         $pdf = Pdf::loadView('admin.invoices.pdf', compact('invoice'));
-
-        // Download file dengan nama Invoice-ID.pdf
         return $pdf->download('Invoice-' . $invoice->id . '.pdf');
     }
 
-    /**
-     * Shortcut mark as paid (opsional, jika masih dibutuhkan)
-     */
     public function markAsPaid(Invoice $invoice)
     {
         $invoice->update(['status' => 'paid']);
-        return redirect()->back()->with('success', 'Pembayaran dikonfirmasi.');
+        return redirect()->back()->with('success', 'Status tagihan diperbarui.');
     }
 }

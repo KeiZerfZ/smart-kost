@@ -107,18 +107,34 @@
              x-transition:enter-start="opacity-0 -translate-y-4"
              x-transition:enter-end="opacity-100 translate-y-0"
              class="md:hidden bg-blue-700 dark:bg-slate-800 border-t border-blue-500 dark:border-slate-700 shadow-inner">
-            <div class="px-4 pt-2 pb-6 space-y-2">
+            <div class="px-4 pt-2 pb-6 space-y-1">
                 @auth
                     <a href="{{ route($dashboardRoute) }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('*.dashboard') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Dashboard</a>
+                    
                     @if(auth()->user()->role == 'owner')
                         <a href="{{ route('rooms.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('rooms.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Kamar</a>
                         <a href="{{ route('tenants.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('tenants.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Penghuni</a>
                         <a href="{{ route('invoices.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('invoices.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Tagihan</a>
+                        <a href="{{ route('complaints.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('complaints.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Keluhan</a>
+                        <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('users.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Manajemen Akun</a>
                     @endif
-                    <form action="{{ route('logout') }}" method="POST" class="pt-4 border-t border-blue-500 dark:border-slate-700">
-                        @csrf
-                        <button type="submit" class="w-full text-left px-4 py-3 rounded-xl text-base font-bold bg-red-500">Logout</button>
-                    </form>
+
+                    <div class="mt-4 pt-4 border-t border-blue-500/50 dark:border-slate-700/50">
+                        <div class="px-4 py-2 mb-2">
+                            <p class="text-xs font-black uppercase tracking-widest text-blue-300 dark:text-slate-400">Akun Saya</p>
+                        </div>
+                        <a href="{{ route('profile.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('profile.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">
+                            Profil ({{ auth()->user()->name }})
+                        </a>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="w-full text-left px-4 py-3 rounded-xl text-base font-black bg-red-500 mt-2 shadow-lg active:scale-95 transition">
+                                LOGOUT
+                            </button>
+                        </form>
+                    </div>
+                @else
+                    <a href="{{ route('login') }}" class="block px-4 py-4 rounded-xl text-center text-base font-black bg-white text-blue-600 shadow-lg">MASUK</a>
                 @endauth
             </div>
         </div>
