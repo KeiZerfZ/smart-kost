@@ -13,109 +13,75 @@ use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - SmartKost Management System (Final Build 2026.05.17)
+| Web Routes - SmartKost Management System (Build 2026.05.18)
 |--------------------------------------------------------------------------
 */
 
-// --- 1. LANDING & AUTH ---
 Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Fitur Register dimatikan: Pendaftaran hanya via Admin
 Auth::routes(['register' => false]);
 
-// --- 2. AUTHENTICATED AREA (Wajib Login) ---
 Route::middleware('auth')->group(function () {
 
-    /**
-     * LOGIKA REDIRECT HOME
-     */
     Route::get('/home', function () {
-        if (auth()->user()->role == 'owner') {
-            return redirect()->route('admin.dashboard');
-        }
-        return redirect()->route('tenant.dashboard');
+        return auth()->user()->role == 'owner' 
+            ? redirect()->route('admin.dashboard') 
+            : redirect()->route('tenant.dashboard');
     })->name('home');
 
     /**
-     * PENGATURAN PROFIL (Owner & Tenant)
+     * PENGATURAN PROFIL
      */
     Route::controller(ProfileController::class)->group(function () {
         Route::get('/profile', 'index')->name('profile.index');
-        Route::patch('/profile', 'update')->name('profile.update');
+        Route::patch('/profile', 'update')->name('profile.update'); // Update data & avatar
         Route::put('/profile/password', 'updatePassword')->name('profile.password');
     });
 
-    /**
-     * FITUR DOWNLOAD PDF (Akses Umum Terautentikasi)
-     */
     Route::get('/invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
 
-    // ==========================================
-    // --- GRUP KHUSUS OWNER (PEMILIK/ADMIN) ---
-    // ==========================================
+    // --- GRUP OWNER ---
     Route::middleware('role:owner')->prefix('admin')->group(function () {
-        
-        // Dashboard & Statistik
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
-        // CRUD MASTER DATA & SECURITY
         Route::controller(TenantController::class)->group(function () {
-            /**
-             * URL HARDENING: Pintu khusus akses berkas KTP.
-             * Mengambil file dari private storage (disk: local).
-             */
-            Route::get('/tenants/ktp/{filename}', 'showKtp')
-                ->name('tenants.ktp.show')
-                ->where('filename', '.*');
+            Route::get('/tenants/ktp/{filename}', 'showKtp')->name('tenants.ktp.show')->where('filename', '.*');
         });
         
         Route::resource('rooms', RoomController::class);
         Route::resource('tenants', TenantController::class);
 
-        // MANAJEMEN AKUN USER
         Route::controller(UserController::class)->group(function () {
             Route::get('/users', 'index')->name('users.index');
             Route::delete('/users/{user}', 'destroy')->name('users.destroy');
             Route::patch('/users/{user}/reset', 'resetPassword')->name('users.reset');
         });
 
-        // MANAJEMEN KEUANGAN & TAGIHAN
         Route::controller(InvoiceController::class)->group(function () {
             Route::get('/invoices', 'index')->name('invoices.index');
             Route::post('/invoices/manual', 'store')->name('invoices.store');
             Route::patch('/invoices/{invoice}/pay', 'pay')->name('invoices.pay'); 
         });
 
-        // MANAJEMEN KELUHAN
         Route::controller(ComplaintController::class)->group(function () {
             Route::get('/complaints', 'index')->name('complaints.index');
             Route::patch('/complaints/{complaint}/status', 'updateStatus')->name('complaints.updateStatus');
         });
     });
 
-    // ==========================================
-    // --- GRUP KHUSUS TENANT (PENGHUNI) ---
-    // ==========================================
+    // --- GRUP TENANT ---
     Route::middleware('role:tenant')->prefix('tenant')->group(function () {
-        
         Route::get('/dashboard', [TenantDashboardController::class, 'index'])->name('tenant.dashboard');
-        
-        // Pembayaran Mandiri
         Route::patch('/invoices/{invoice}/qris', [InvoiceController::class, 'payQRIS'])->name('invoices.payQRIS');
-
-        // Lapor Keluhan
         Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
     });
 
-
+    // --- TESTING WA (Hapus jika sudah stabil) ---
     Route::get('/test-wa', function() {
-        $target = '08xxxxxxxxxx'; // Masukkan nomor WA lu paka 08...
-        $message = "Halo Brok! Ini tes notifikasi dari sistem *SmartKost.* Kalau masuk, berarti lu keren! 😎";
-        
-        $result = \App\Services\FonnteService::send($target, $message);
-        return response()->json($result);
+        $target = '08xxxxxxxxxx'; 
+        $message = "Halo Brok! Ini tes notifikasi dari sistem *SmartKost.*";
+        return response()->json(\App\Services\FonnteService::send($target, $message));
     });
-
 });

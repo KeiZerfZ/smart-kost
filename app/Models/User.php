@@ -2,30 +2,53 @@
 
 namespace App\Models;
 
-// Tambahkan import ini
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Factories\HasFactory; // Tambahan standar
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute; // Penting untuk Accessor
 
 class User extends Authenticatable
 {
-    // Panggil trait-nya di sini
     use Notifiable, HasFactory;
 
+    /**
+     * Mass assignable attributes.
+     * Pastikan 'avatar' ada di sini agar bisa di-update via ProfileController.
+     */
     protected $fillable = [
         'name', 
         'email', 
         'password', 
-        'role'
+        'role',
+        'avatar' 
     ];
 
+    /**
+     * Attributes hidden for serialization.
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    // Relasi ke data penghuni jika role-nya adalah 'tenant'
+    /**
+     * Accessor: avatar_url
+     * Menangani logika foto profil default menggunakan UI Avatars.
+     * Panggil di Blade dengan: {{ $user->avatar_url }}
+     */
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->avatar 
+                ? asset('storage/' . $this->avatar) 
+                : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&color=7F9CF5&background=EBF4FF',
+        );
+    }
+
+    /**
+     * Relasi ke data penghuni jika role-nya adalah 'tenant'.
+     */
     public function tenant(): HasOne
     {
         return $this->hasOne(Tenant::class);

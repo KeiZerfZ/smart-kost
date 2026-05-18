@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage; // Penting untuk hapus/simpan file
 use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends Controller
@@ -25,13 +26,23 @@ class ProfileController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:1024'], // Max 1MB
         ]);
 
-        // Sekarang Intelephense tahu $user adalah Model User, garis merah hilang
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
+        $data = $request->only('name', 'email');
+
+        // Logika Upload Avatar
+        if ($request->hasFile('avatar')) {
+            // Hapus foto profil lama jika bukan default (hemat storage)
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // Simpan foto baru ke folder public/avatars
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $user->update($data);
 
         return back()->with('success', 'Profil berhasil diperbarui.');
     }
@@ -39,14 +50,15 @@ class ProfileController extends Controller
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'], // Laravel otomatis ngecek ke DB
+            'current_password' => ['required', 'current_password'],
             'password' => ['required', 'confirmed', Password::defaults()],
         ], [
             'current_password.current_password' => 'Password lama salah!',
             'password.confirmed' => 'Konfirmasi password baru nggak cocok.'
         ]);
 
-        $request->user()->update([
+        $user = Auth::user();
+        $user->update([
             'password' => Hash::make($request->password),
         ]);
 
