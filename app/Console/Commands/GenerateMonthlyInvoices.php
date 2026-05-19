@@ -1,59 +1,95 @@
 <?php
 
+namespace App\Console\Exceptions; // Sesuaikan jika namespace bawaan Anda menggunakan App\Console\Commands
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\Tenant;
 use App\Models\Invoice;
+use App\Services\TelegramService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\InvoiceGenerated;
 
 class GenerateMonthlyInvoices extends Command
 {
-    // Signature perintah yang dipanggil oleh cron job 
+    /**
+     * Signature perintah yang dipanggil oleh cron job atau CLI
+     */
     protected $signature = 'invoices:generate';
-    protected $description = 'Otomatis generate tagihan bulanan untuk setiap penghuni kost';
+
+    /**
+     * Deskripsi perintah eksekusi
+     */
+    protected $description = 'Otomatis menerbitkan tagihan bulanan untuk setiap penghuni kost aktif berdasarkan siklus tanggal masuk';
 
     public function handle()
     {
         $today = Carbon::today();
         
-        // Ambil semua penghuni yang aktif 
-        $tenants = Tenant::with('room')->get();
+        // Hanya ambil penghuni yang berstatus aktif beserta relasinya
+        $tenants = Tenant::with(['user', 'room'])->where('is_active', true)->get();
         $count = 0;
 
         foreach ($tenants as $tenant) {
-            // Logika: Buat tagihan jika hari ini sama dengan tanggal masuk (misal masuk tgl 5, tagihan muncul tiap tgl 5)
-            if ($today->day == $tenant->entry_date->day) {
+            // Pastikan properti entry_date telah di-cast sebagai date/carbon di Model Tenant
+            $entryDate = Carbon::parse($tenant->entry_date);
+
+            // Logika Siklus: Tagihan terbit jika hari ini sama dengan tanggal masuk
+            if ($today->day === $entryDate->day) {
                 
-                // Cek apakah tagihan untuk bulan ini sudah pernah dibuat sebelumnya
+                // Proteksi: Cek apakah tagihan untuk periode bulan dan tahun ini sudah pernah dibuat
                 $exists = Invoice::where('tenant_id', $tenant->id)
                     ->whereMonth('bill_date', $today->month)
                     ->whereYear('bill_date', $today->year)
                     ->exists();
 
                 if (!$exists) {
-                    Invoice::create([
+                    // Buat satu data tagihan baru secara resmi
+                    $invoice = Invoice::create([
                         'tenant_id' => $tenant->id,
-                        'amount' => $tenant->room->price, // Mengambil harga sewa dari kamar 
+                        'amount'    => $tenant->room->price, 
                         'bill_date' => $today,
-                        'status' => 'unpaid', // Status default adalah belum bayar
-                    ]);
-                    $count++;
-                
-                $newInvoice = Invoice::create([
-                        'tenant_id' => $tenant->id,
-                        'amount' => $tenant->room->price,
-                        'bill_date' => $today,
-                        'status' => 'unpaid',
+                        'due_date'  => $today->copy()->addMonth(), // Jatuh tempo 1 bulan ke depan
+                        'status'    => 'unpaid',
                     ]);
 
-                Mail::to($tenant->user->email)->send(new InvoiceGenerated($newInvoice));
+                    $count++;
+
+                    // Kirim Notifikasi Tagihan Baru ke Telegram Tenant
+                    $this->sendTelegramBillNotification($tenant, $invoice);
                 }
             }
         }
 
-        $this->info("Berhasil membuat $count tagihan baru.");
+        $this->info("Proses selesai. Berhasil menerbitkan $count tagihan baru.");
+    }
+
+    /**
+     * Fungsi Bantu: Mengirimkan informasi tagihan baru ke Telegram
+     */
+    private function sendTelegramBillNotification($tenant, $invoice)
+    {
+        $chatId = $tenant->telegram_chat_id;
+        if (!$chatId) return;
+
+        $amount = number_format($invoice->amount, 0, ',', '.');
+        $dueDate = Carbon::parse($invoice->due_date)->format('d/m/Y');
+
+        $message = "🔔 *TAGIHAN BARU TELAH TERBIT*\n\n";
+        $message .= "Halo *{$tenant->user->name}*,\n";
+        $message .= "Tagihan hunian Anda untuk periode *{$invoice->bill_date->format('F Y')}* telah diterbitkan oleh sistem.\n\n";
+        $message .= "📊 *Rincian Tagihan:*\n";
+        $message .= "• No. Invoice: `#INV-{$invoice->id}`\n";
+        $message .= "• Kamar: *Kamar {$tenant->room->room_number}*\n";
+        $message .= "• Total Tagihan: *Rp {$amount}*\n";
+        $message .= "• Batas Jatuh Tempo: *{$dueDate}*\n\n";
+        $message .= "Mohon lakukan penyelesaian pembayaran sebelum tanggal jatuh tempo melalui tautan di bawah ini.";
+
+        $inlineKeyboard = [
+            [
+                ['text' => '💳 Bayar Sekarang', 'url' => config('app.url')]
+            ]
+        ];
+
+        TelegramService::sendMessage($chatId, $message, $inlineKeyboard);
     }
 }
