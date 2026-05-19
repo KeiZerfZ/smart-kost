@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('tenants', function (Blueprint $table) {
@@ -18,15 +15,12 @@ return new class extends Migration
             $table->string('phone');
             $table->string('telegram_chat_id')->nullable();
             $table->string('id_card_photo')->nullable(); 
-            $table->date('entry_date'); 
-            $table->boolean('is_active')->default(true); 
+            $table->date('entry_date')->nullable(); // nullable karena baru diisi saat disetujui
+            $table->enum('status', ['pending', 'active', 'inactive'])->default('pending'); // Menggantikan is_active
             $table->timestamps();
         });        
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('tenants');
