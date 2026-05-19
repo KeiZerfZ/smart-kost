@@ -142,7 +142,7 @@
                                     <td class="py-5 font-bold text-gray-700 dark:text-gray-200 transition-colors">{{ $inv->bill_date->format('F Y') }}</td>
                                     <td class="py-5 text-right font-black text-red-600 dark:text-red-400 italic text-lg transition-colors">Rp {{ number_format($inv->amount, 0, ',', '.') }}</td>
                                     <td class="py-5 text-right">
-                                        <button onclick="openQRIS('{{ route('invoices.payQRIS', $inv->id) }}', '{{ route('invoices.payQRIS.scan', $inv->id) }}')" 
+                                        <button onclick="openQRIS('{{ route('invoices.payQRIS.scan', $inv->id) }}')" 
                                                 class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition shadow-lg shadow-blue-100 dark:shadow-none hover:bg-blue-700 active:scale-95">
                                             Bayar QRIS
                                         </button>
@@ -245,22 +245,21 @@
         <h3 class="text-3xl font-black text-gray-800 dark:text-gray-100 mb-2 tracking-tighter italic transition-colors">Scan Pay.</h3>
         <p class="text-[10px] text-gray-400 dark:text-gray-500 mb-8 font-black uppercase tracking-widest transition-colors">SmartKost Payments</p>
         
-        <div class="bg-gray-100 dark:bg-slate-800 p-6 rounded-3xl mb-8 relative transition-colors">
+        <div class="bg-gray-100 dark:bg-slate-800 p-6 rounded-3xl mb-6 relative transition-colors">
             <img id="qris-image-target" src="" alt="QRIS Engine" class="mx-auto rounded-xl shadow-md border-4 border-white dark:border-slate-700 relative z-10 w-[200px] h-[200px]">
         </div>
 
-        <form id="form-qris" action="" method="POST" class="space-y-4">
-            @csrf @method('PATCH')
-            <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-200 dark:shadow-none">SAYA SUDAH MELAKUKAN PEMBAYARAN</button>
-        </form>
-        <button onclick="document.getElementById('modal-qris').classList.add('hidden')" class="mt-6 text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-widest transition-colors">Batalkan</button>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+            Silakan pindai kode QRIS di atas menggunakan aplikasi e-wallet atau perbankan Anda. Sistem akan memperbarui status pembayaran secara otomatis setelah pemindaian berhasil.
+        </p>
+
+        <button onclick="document.getElementById('modal-qris').classList.add('hidden')" class="text-gray-400 dark:text-gray-500 text-[10px] font-black uppercase tracking-widest transition-colors hover:underline">Tutup Halaman</button>
     </div>
 </div>
 
 <script>
-    function openQRIS(postUrl, scanUrl) {
-        document.getElementById('form-qris').action = postUrl;
-        
+    function openQRIS(scanUrl) {
+        // Melakukan enkode komponen URL agar aman dibaca oleh API generator QR Code
         const qrGeneratorApi = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(scanUrl);
         document.getElementById('qris-image-target').src = qrGeneratorApi;
         
