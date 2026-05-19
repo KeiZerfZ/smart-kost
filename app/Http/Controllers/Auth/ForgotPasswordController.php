@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Foundation\Auth\SendsPasswordResetEmails; // WAJIB DIIMPORT
+use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
 use Illuminate\Http\Request;
 use App\Models\User;
 use App\Services\TelegramService;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password; // Wajib diimport
 
 class ForgotPasswordController extends Controller
 {
@@ -24,12 +22,10 @@ class ForgotPasswordController extends Controller
     |
     */
 
-    // Mengembalikan trait agar fungsi showLinkRequestForm() aktif kembali
     use SendsPasswordResetEmails; 
 
     /**
-     * Mengoverride rute eksekusi pengiriman tautan dari Email ke Telegram Bot
-     * Fungsi showLinkRequestForm() bawaan trait di atas akan tetap berjalan normal
+     * Mengoverride rute eksekusi pengiriman tautan menggunakan Password Broker Laravel
      */
     public function sendResetLinkEmail(Request $request)
     {
@@ -37,18 +33,11 @@ class ForgotPasswordController extends Controller
 
         $user = User::with('tenant')->where('email', $request->email)->first();
 
-        // Validasi ketersediaan Chat ID Telegram pada database akun tenant
+        // Validasi peran dan ketersediaan Chat ID Telegram
         if ($user && $user->role === 'tenant' && $user->tenant && $user->tenant->telegram_chat_id) {
-            $token = Str::random(60);
-
-            // Simpan atau perbarui token ke tabel penampungan password_resets
-            DB::table('password_resets')->updateOrInsert(
-                ['email' => $user->email],
-                [
-                    'token' => Hash::make($token), 
-                    'created_at' => now()
-                ]
-            );
+            
+            // Menggunakan Broker internal Laravel untuk membuat token secara aman dan standar
+            $token = Password::broker()->createToken($user);
 
             $resetUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
 
