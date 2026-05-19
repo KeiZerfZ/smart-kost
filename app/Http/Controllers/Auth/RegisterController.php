@@ -4,67 +4,72 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Foundation\Auth\RegistersUsers;
+use App\Models\Room;
+use App\Models\Tenant;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class RegisterController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Register Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles the registration of new users as well as their
-    | validation and creation. By default this controller uses a trait to
-    | provide this functionality without requiring any additional code.
-    |
-    */
-
-    use RegistersUsers;
-
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/home';
-
-    /**
-     * Create a new controller instance.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('guest');
     }
 
     /**
-     * Get a validator for an incoming registration request.
-     *
-     * @return \Illuminate\Contracts\Validation\Validator
+     * Menampilkan formulir pendaftaran mandiri calon penghuni.
      */
-    protected function validator(array $data)
+    public function showRegistrationForm()
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        $rooms = Room::where('status', 'empty')->orderBy('room_number', 'asc')->get();
+        return view('auth.register', compact('rooms'));
     }
 
     /**
-     * Create a new user instance after a valid registration.
-     *
-     * @return User
+     * Memproses data pendaftaran mandiri calon penghuni.
      */
-    protected function create(array $data)
+    public function register(Request $request)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'phone' => 'required|string',
+            'telegram_chat_id' => 'required|string',
+            'room_id' => 'required|exists:rooms,id',
+            'id_card_photo' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+            'password' => 'required|string|min:6|confirmed',
         ]);
+
+        DB::transaction(function() use ($request) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'tenant',
+            ]);
+
+            $path = $request->file('id_card_photo')->store('ktp_photos', 'local');
+
+            Tenant::create([
+                'user_id' => $user->id,
+                'room_id' => $request->room_id,
+                'phone' => $request->phone,
+                'telegram_chat_id' => $request->telegram_chat_id,
+                'id_card_photo' => $path,
+                'status' => 'pending', 
+            ]);
+        });
+
+        // Mengalihkan pengguna ke halaman sukses pendaftaran mandiri
+        return redirect()->route('register.success');
+    }
+
+    /**
+     * Menampilkan halaman pemberitahuan akun berhasil dibuat dan berstatus on-hold.
+     */
+    public function success()
+    {
+        return view('auth.register-success');
     }
 }
