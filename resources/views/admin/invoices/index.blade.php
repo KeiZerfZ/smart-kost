@@ -80,7 +80,7 @@
                                         {{ $inv->bill_date->format('F Y') }}
                                     </div>
                                     <p class="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest">
-                                        Jatuh Tempo: 10 {{ $inv->bill_date->format('M') }}
+                                        Jatuh Tempo: {{ $inv->due_date->format('d M Y') }}
                                     </p>
                                 </td>
 

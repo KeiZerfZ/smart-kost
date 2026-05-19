@@ -16,12 +16,14 @@ return new class extends Migration
             $table->foreignId('tenant_id')->constrained()->onDelete('cascade');
             $table->integer('amount');
             $table->date('bill_date');
+            $table->date('due_date'); // KOLOM BARU: Batas akhir pembayaran
             $table->date('payment_date')->nullable();
             $table->enum('status', ['unpaid', 'paid'])->default('unpaid');
             $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }
+
     /**
      * Reverse the migrations.
      */

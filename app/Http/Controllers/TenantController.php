@@ -71,6 +71,7 @@ class TenantController extends Controller
                 'tenant_id' => $tenant->id,
                 'amount' => $tenant->room->price,
                 'bill_date' => now(),
+                'due_date' => now()->addMonth(),
                 'status' => 'unpaid',
             ]);
 

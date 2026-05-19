@@ -77,11 +77,4 @@ Route::middleware('auth')->group(function () {
         Route::patch('/invoices/{invoice}/qris', [InvoiceController::class, 'payQRIS'])->name('invoices.payQRIS');
         Route::post('/complaints', [ComplaintController::class, 'store'])->name('complaints.store');
     });
-
-    // --- TESTING WA (Hapus jika sudah stabil) ---
-    Route::get('/test-wa', function() {
-        $target = '08xxxxxxxxxx'; 
-        $message = "Halo Brok! Ini tes notifikasi dari sistem *SmartKost.*";
-        return response()->json(\App\Services\FonnteService::send($target, $message));
-    });
 });
