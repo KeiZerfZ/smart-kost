@@ -2,12 +2,22 @@
 
 @section('content')
 @php
+    // Sinkronisasi Logika Berdasarkan Kolom due_date Database
     $earliestUnpaid = $unpaidInvoices->sortBy('due_date')->first();
     $lastInvoice = \App\Models\Invoice::where('tenant_id', $tenant->id)->latest('bill_date')->first();
     
-    $nextEstimation = $lastInvoice ? $lastInvoice->bill_date->addMonth() : \Carbon\Carbon::parse($tenant->entry_date)->addMonth();
+    // Mengambil objek tanggal masuk secara presisi
+    $entryDate = \Carbon\Carbon::parse($tenant->entry_date);
+    
+    // Estimasi tanggal berikutnya disesuaikan agar mempertahankan tanggal masuk (day) penghuni
+    $nextEstimation = $lastInvoice 
+        ? $lastInvoice->bill_date->addMonth()->day($entryDate->day) 
+        : $entryDate->copy()->addMonth();
+    
+    // Jatuh tempo langsung mengambil record valid dari due_date database
     $deadlineDate = $earliestUnpaid ? $earliestUnpaid->due_date : null;
     
+    // Validasi apakah tagihan telah melewati tenggat waktu (Overdue)
     $isOverdue = $deadlineDate ? now()->gt($deadlineDate) : false;
 @endphp
 
@@ -70,7 +80,7 @@
 
                     <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/40 transition-colors">
                         <p class="text-[10px] font-black text-blue-400 dark:text-blue-300 uppercase mb-1">Estimasi Tagihan Berikutnya</p>
-                        <p class="text-sm font-black text-blue-600 dark:text-blue-400 italic">{{ $nextEstimation->format('F Y') }}</p>
+                        <p class="text-sm font-black text-blue-600 dark:text-blue-400 italic">{{ $nextEstimation->format('d F Y') }}</p>
                         <p class="text-[9px] text-blue-400 dark:text-blue-300 font-bold mt-1 uppercase leading-tight">Tagihan baru akan diterbitkan otomatis berdasarkan siklus tanggal masuk Anda.</p>
                     </div>
                 </div>
@@ -248,11 +258,9 @@
 </div>
 
 <script>
-    // Penyesuaian Fungsi untuk Mengubah Data QR Code secara Dinamis Berdasarkan Endpoint Simulasi Scan HP
     function openQRIS(postUrl, scanUrl) {
         document.getElementById('form-qris').action = postUrl;
         
-        // Inject data URL scan real ke generator QR API
         const qrGeneratorApi = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(scanUrl);
         document.getElementById('qris-image-target').src = qrGeneratorApi;
         
