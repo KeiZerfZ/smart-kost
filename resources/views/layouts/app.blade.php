@@ -50,6 +50,17 @@
                             <a href="{{ route('tenants.index') }}" class="px-3 py-2 rounded-xl text-sm font-bold transition {{ request()->routeIs('tenants.*') ? 'bg-blue-700 dark:bg-blue-600 shadow-inner' : 'hover:bg-blue-500' }}">Penghuni</a>
                             <a href="{{ route('invoices.index') }}" class="px-3 py-2 rounded-xl text-sm font-bold transition {{ request()->routeIs('invoices.*') ? 'bg-blue-700 dark:bg-blue-600 shadow-inner' : 'hover:bg-blue-500' }}">Tagihan</a>
                             <a href="{{ route('complaints.index') }}" class="px-3 py-2 rounded-xl text-sm font-bold transition {{ request()->routeIs('complaints.*') ? 'bg-blue-700 dark:bg-blue-600 shadow-inner' : 'hover:bg-blue-500' }}">Keluhan</a>
+                            
+                            <a href="{{ route('tenants.verification.index') }}" class="px-3 py-2 rounded-xl text-sm font-bold transition flex items-center gap-1.5 {{ request()->routeIs('tenants.verification.index') ? 'bg-blue-700 dark:bg-blue-600 shadow-inner' : 'hover:bg-blue-500' }}">
+                                <span>Verifikasi</span>
+                                @php $pendingCount = \App\Models\Tenant::where('status', 'pending')->count(); @endphp
+                                @if($pendingCount > 0)
+                                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-[9px] font-black bg-red-500 text-white rounded-full">
+                                        {{ $pendingCount }}
+                                    </span>
+                                @endif
+                            </a>
+
                             <a href="{{ route('users.index') }}" class="px-3 py-2 rounded-xl text-sm font-bold transition {{ request()->routeIs('users.*') ? 'bg-blue-700 dark:bg-blue-600 shadow-inner' : 'hover:bg-blue-500' }}">Akun</a>
                         @endif
 
@@ -70,7 +81,7 @@
                             <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
                                 <button type="submit" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition shadow-lg shadow-red-700/20 active:scale-95">
-                                    Logout
+                                    Keluar
                                 </button>
                             </form>
                         </div>
@@ -116,6 +127,12 @@
                         <a href="{{ route('tenants.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('tenants.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Penghuni</a>
                         <a href="{{ route('invoices.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('invoices.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Tagihan</a>
                         <a href="{{ route('complaints.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('complaints.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Keluhan</a>
+                        <a href="{{ route('tenants.verification.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold flex justify-between items-center {{ request()->routeIs('tenants.verification.index') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">
+                            <span>Verifikasi Pendaftaran</span>
+                            @if($pendingCount > 0)
+                                <span class="px-2 py-0.5 bg-red-500 text-white text-xs font-black rounded-full">{{ $pendingCount }}</span>
+                            @endif
+                        </a>
                         <a href="{{ route('users.index') }}" class="block px-4 py-3 rounded-xl text-base font-bold {{ request()->routeIs('users.*') ? 'bg-blue-800' : 'hover:bg-blue-500' }}">Manajemen Akun</a>
                     @endif
 
@@ -129,7 +146,7 @@
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf
                             <button type="submit" class="w-full text-left px-4 py-3 rounded-xl text-base font-black bg-red-500 mt-2 shadow-lg active:scale-95 transition">
-                                LOGOUT
+                                KELUAR
                             </button>
                         </form>
                     </div>

@@ -8,7 +8,7 @@
                 Data Penghuni.
             </h1>
             <p class="text-gray-500 dark:text-gray-400 font-medium text-sm transition-colors">
-                Daftar warga resmi SmartKost (Notifikasi via Telegram Bot).
+                Daftar penghuni resmi SmartKost dengan integrasi notifikasi Telegram Bot.
             </p>
         </div>
 
@@ -25,7 +25,7 @@
                     <tr class="bg-gray-50/50 dark:bg-slate-800/50 border-b border-gray-50 dark:border-slate-800">
                         <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Penghuni</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Kamar</th>
-                        <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Kontak & Telegram</th>
+                        <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Kontak & Telegram Chat ID</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-center">Identitas</th>
                         <th class="p-6 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest text-center">Manajemen</th>
                     </tr>
@@ -52,7 +52,7 @@
                         <td class="p-6">
                             <div class="inline-flex flex-col">
                                 <span class="bg-blue-600 text-white px-3 py-1 rounded-lg font-black text-xs tracking-tighter italic">
-                                    {{ $t->room->room_number }}
+                                    Kamar {{ $t->room->room_number }}
                                 </span>
                                 <span class="text-[9px] text-gray-400 dark:text-gray-500 font-black uppercase mt-1 ml-1 tracking-widest">{{ $t->room->type }}</span>
                             </div>
@@ -81,10 +81,10 @@
                         </td>
 
                         <td class="p-6 text-center">
-                            <form action="{{ route('tenants.destroy', $t->id) }}" method="POST" onsubmit="return confirm('Proses checkout?')">
+                            <form action="{{ route('tenants.destroy', $t->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin memproses check-out untuk penghuni ini?')">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400 hover:bg-red-500 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition duration-300 shadow-sm border border-red-100 dark:border-red-800/40">
-                                    Checkout
+                                    Check-Out
                                 </button>
                             </form>
                         </td>
